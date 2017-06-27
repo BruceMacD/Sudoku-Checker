@@ -25,39 +25,50 @@ typedef struct{
 //Function Declarations
 void readFile();
 void printPuzzle();
+parameters * threadParameters(int row, int column, int id);
 void * validateRows(void * param);
 void * validateColumns(void * param);
 void * validateSubSquare(void * param);
 void refreshCheckNums();
 
 int main(int argc, char * argv[]){
+  int b ;
+  int successfulThreads = 0;
   filename = argv[1];
   readFile();
   //TODO: Remove! For Error Checking only!
-  printPuzzle();
+  //printPuzzle();
 
-  //Create data pointers
-  parameters *data0 = (parameters *) malloc(sizeof(parameters));
-  data0->row = 0;
-  data0->column = 0;
-  data0->threadID = 0;
   //Initialize threads
   pthread_t threads[NUM_THREADS];
-  pthread_create(&threads[0], NULL, validateRows, data0);
+  pthread_create(&threads[0], NULL, validateRows, threadParameters(0,0,0));
+  pthread_create(&threads[1], NULL, validateColumns, threadParameters(0,0,1));
+  pthread_create(&threads[2], NULL, validateSubSquare, threadParameters(0,0,2));
+  pthread_create(&threads[3], NULL, validateSubSquare, threadParameters(0,3,3));
+  pthread_create(&threads[4], NULL, validateSubSquare, threadParameters(0,6,4));
+  pthread_create(&threads[5], NULL, validateSubSquare, threadParameters(3,0,5));
+  pthread_create(&threads[6], NULL, validateSubSquare, threadParameters(3,3,6));
+  pthread_create(&threads[7], NULL, validateSubSquare, threadParameters(3,6,7));
+  pthread_create(&threads[8], NULL, validateSubSquare, threadParameters(6,0,8));
+  pthread_create(&threads[9], NULL, validateSubSquare, threadParameters(6,3,9));
+  pthread_create(&threads[10], NULL, validateSubSquare, threadParameters(6,6,10));
 
   //Wait for threads to finish
-  //TODO: Loop over all threads
-  pthread_join(threads[0], NULL);
+  for(b = 0; b < NUM_THREADS; b++){
+    pthread_join(threads[b], NULL);
+  }
+
 
   //Check result array to ensure all all threads returned success
-  //TODO: Change to for loop once all threads are implemented
-  if(thread_results[0] == 1){
-    printf("All Rows Valid\n");
-  }
-  if(thread_results[1] == 1){
-    printf("All Columns Valid\n");
-  }	
-
+  for(b = 0; b < NUM_THREADS; b++){
+    if(thread_results[b] == 1){
+      successfulThreads++;
+    }
+  }  
+  if(successfulThreads == NUM_THREADS)
+    printf("Valid solution to a sudoku puzzle\n");
+  else
+    printf("Not a valid solution to a sudoku puzzle\n");
 }
 
 void readFile(){
@@ -84,6 +95,13 @@ void printPuzzle(){
     printf("\n");
   }
 }
+parameters * threadParameters(int row, int column, int id){
+  parameters *data = (parameters *) malloc(sizeof(parameters));
+  data->row = row;
+  data->column = column;
+  data->threadID = id;
+  return data;
+}
 void * validateRows(void * param){
   parameters * rowData = (parameters *) param;
   int i, j, k, value;
@@ -94,7 +112,7 @@ void * validateRows(void * param){
     for(j = rowData->column; j < PUZZLE_DIM; j++){
       value = sudoku_solution[i][j];
       if(value >= 1 || value <=9){
-        check_nums[value-1] = 1;
+        check_nums[value-1]++;
       }
     }
     for(k = 0; k < PUZZLE_DIM; k++){
@@ -111,12 +129,53 @@ void * validateRows(void * param){
   }
 }
 void * validateColumns(void * param){
-  refreshCheckNums();
+  parameters * columnData = (parameters *) param;
+  int i, j, k, value;
+  int numValidColumns = 0;
+  for(i = columnData->column; i < PUZZLE_DIM; i++){
+    int nums = 0;
+    refreshCheckNums();
+    for(j = columnData->row; j < PUZZLE_DIM; j++){
+      value = sudoku_solution[j][i];
+      if(value >= 1 || value <=9){
+        check_nums[value-1]++;
+      }
+    }
+    for(k = 0; k < PUZZLE_DIM; k++){
+      if(check_nums[k] == 1){
+        nums++;
+      }
+    }
+    if(nums == PUZZLE_DIM){
+      numValidColumns++;
+    }
+  }
+  if(numValidColumns == PUZZLE_DIM){
+    thread_results[columnData->threadID] = 1;
+  }
 
 }
 void * validateSubSquare(void * param){
   refreshCheckNums();
-
+  parameters * subSquareData = (parameters *) param;
+  int i, j, k, value;
+  int nums = 0;
+  for(i = subSquareData->row; i < subSquareData->row + 3; i++){
+    for(j = subSquareData->column; j < subSquareData->column + 3; j++){
+       value = sudoku_solution[i][j];
+       if(value >= 1 || value <=9){
+        check_nums[value-1]++;
+       }
+    } 
+  }
+  for(k = 0; k < PUZZLE_DIM; k++){
+    if(check_nums[k] == 1){
+        nums++;
+    }
+  }
+  if(nums == PUZZLE_DIM){
+    thread_results[subSquareData->threadID] = 1;
+  }
 }
 void refreshCheckNums(){
   int a;
