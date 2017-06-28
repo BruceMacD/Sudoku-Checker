@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <pthread.h>
 
 /* Macro Definitions */
 #define PUZZLE_DIM 9
