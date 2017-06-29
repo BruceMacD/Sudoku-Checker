@@ -86,6 +86,10 @@ void readFile(){
   for(i = 0; i<PUZZLE_DIM; i++){
     for(j = 0; j< PUZZLE_DIM; j++){
       fscanf(file, "%d", &sudoku_solution[i][j]);
+      if (sudoku_solution[i][j] > 9 || sudoku_solution[i][j] < 1) {
+        fprintf(stderr, "ERROR: File not a valid sudoku solution!\n");
+        exit(1);
+      }
     }
   }
   //Close the file
