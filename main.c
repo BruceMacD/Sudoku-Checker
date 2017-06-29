@@ -42,7 +42,8 @@ int main(int argc, char * argv[]){
   filename = argv[1];
   //Read contents of file to place in 2D array
   readFile();
-
+  //Print the puzzle for demonstration purposes
+  printPuzzle()
   //Initialize threads
   pthread_t threads[NUM_THREADS];
   pthread_create(&threads[0], NULL, validateRows, threadParameters(0,0,0));
