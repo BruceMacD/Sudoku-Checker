@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <string.h>
 
 /* Macro Definitions */
 #define PUZZLE_DIM 9
@@ -13,8 +13,6 @@
 char * filename;
 //2D array to hold a sudoku puzzle
 int sudoku_solution [PUZZLE_DIM][PUZZLE_DIM] = {0};
-//Array to be used by threads to ensure numbers 1 through 9 are present
-int check_nums[PUZZLE_DIM] = {0};
 //Array to store the result of each thread
 int thread_results [NUM_THREADS] = {0};
 
@@ -32,7 +30,7 @@ parameters * threadParameters(int row, int column, int id);
 void * validateRows(void * param);
 void * validateColumns(void * param);
 void * validateSubSquare(void * param);
-void refreshCheckNums();
+void refreshCheckNums(int *array, int size);
 
 int main(int argc, char * argv[]){
   int b ;
@@ -89,6 +87,10 @@ void readFile(){
   for(i = 0; i<PUZZLE_DIM; i++){
     for(j = 0; j< PUZZLE_DIM; j++){
       fscanf(file, "%d", &sudoku_solution[i][j]);
+      if (sudoku_solution[i][j] > 9 || sudoku_solution[i][j] < 1) {
+        fprintf(stderr, "ERROR: File not a valid sudoku solution!\n");
+        exit(1);
+      }
     }
   }
   //Close the file
@@ -118,6 +120,8 @@ parameters * threadParameters(int row, int column, int id){
 
 /* Function to validate all of the rows of a sudoku puzzle */
 void * validateRows(void * param){
+  //Array to be used by threads to ensure numbers 1 through 9 are present
+  int check_nums[PUZZLE_DIM] = {0};
   parameters * rowData = (parameters *) param;
   int i, j, k, value;
   int numValidRows = 0;
@@ -125,7 +129,7 @@ void * validateRows(void * param){
   for(i = rowData->row; i < PUZZLE_DIM; i++){
     int nums = 0;
     //Refresh the temporary array used to check if a row contains all values between 1-9
-    refreshCheckNums();
+    refreshCheckNums(check_nums, PUZZLE_DIM);
     //Loop over all columns
     for(j = rowData->column; j < PUZZLE_DIM; j++){
       value = sudoku_solution[i][j];
@@ -151,6 +155,8 @@ void * validateRows(void * param){
 }
 /* Function to validate all of the columns of a sudoku puzzle */
 void * validateColumns(void * param){
+  //Array to be used by threads to ensure numbers 1 through 9 are present
+  int check_nums[PUZZLE_DIM] = {0};
   parameters * columnData = (parameters *) param;
   int i, j, k, value;
   int numValidColumns = 0;
@@ -158,7 +164,7 @@ void * validateColumns(void * param){
   for(i = columnData->column; i < PUZZLE_DIM; i++){
     int nums = 0;
     //Refresh the temporary array
-    refreshCheckNums();
+    refreshCheckNums(check_nums, PUZZLE_DIM);
     //Loop over all rows
     for(j = columnData->row; j < PUZZLE_DIM; j++){
       value = sudoku_solution[j][i];
@@ -185,8 +191,8 @@ void * validateColumns(void * param){
 }
 /* Function to validate a single 3x3 subsquare of a sudoku puzzle */
 void * validateSubSquare(void * param){
-  //Refresh the temporary array
-  refreshCheckNums();
+  //Array to be used by threads to ensure numbers 1 through 9 are present
+  int check_nums[PUZZLE_DIM] = {0};
   parameters * subSquareData = (parameters *) param;
   int i, j, k, value;
   int nums = 0;
@@ -212,9 +218,6 @@ void * validateSubSquare(void * param){
   }
 }
 /* Refresh the temporary array used to ensure all values between 1-9 are present */
-void refreshCheckNums(){
-  int a;
-  for(a=0; a<PUZZLE_DIM;a++){
-    check_nums[a] = 0;
-  }
+void refreshCheckNums(int *array, int size) {
+    memset(array,0,size * sizeof(*array));
 }
